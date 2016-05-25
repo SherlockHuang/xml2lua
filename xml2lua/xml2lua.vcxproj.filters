@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="xml2lua.cpp">
+    <ClCompile Include="tinyxml2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\tinyxml2.cpp">
+    <ClCompile Include="xml2lua.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\tinyxml2.h">
+    <ClInclude Include="tinyxml2.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
