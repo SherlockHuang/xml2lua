@@ -21,10 +21,16 @@
     <ClCompile Include="xml2lua.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="content.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tinyxml2.h">
       <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="content.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

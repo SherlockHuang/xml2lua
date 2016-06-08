@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="content.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="xml2lua.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="content.h" />
     <ClInclude Include="tinyxml2.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
