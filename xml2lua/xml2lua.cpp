@@ -4,16 +4,19 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
+#include <boost\filesystem.hpp>
 #include "tinyxml2.h"
 #include "content.h"
 
 using namespace std;
 using namespace tinyxml2;
+using namespace boost::filesystem;
 
 boost::format strFmt("%s%s=[[%s]],\n");
 boost::format notStrFmt("%s%s=%s,\n");
-boost::format keyFmt("%s_%s_%d");
+boost::format keyFmt("$%s_%s_%d");
 const vector<string> VEC_PREFIX = { "str_" };
+const string LANG_NULL = "";
 
 string filename_no_ext;
 int maxId = 1;
@@ -21,7 +24,7 @@ Content content;
 
 inline string get_file_name_no_ext(const string filename) {
 	int last = filename.find_last_of(".");
-	return filename.substr(0, last - 1);
+	return filename.substr(0, last);
 }
 
 inline string get_file_name_ext(const string filename) {
@@ -75,21 +78,46 @@ void walk(string& buf, const XMLElement* ele, int level) {
 
 	for (const XMLAttribute* attr = ele->FirstAttribute(); attr != nullptr; attr = attr->Next()) {
 		string name = attr->Name();
+		string value = attr->Value();
 		boost::format* pfmt = &notStrFmt;
+		bool needWrite = true;
 
 		if (isStr(name)) {
 			pfmt = &strFmt;
 
+			string lang = LANG_NULL;
 			vector<string> vecSuffix = content.getTitles();
 			toSuffix(vecSuffix);
-			name = parse(name, VEC_PREFIX, vecSuffix);
+			name = parse(name, VEC_PREFIX, vecSuffix, lang);
 			string key = (keyFmt % filename_no_ext % name % maxId).str();
-			if (content.hasKey(key))
-			{
-
+			if (!content.hasKey(key)) {
+				content.createPair(key);
 			}
+
+			if (!content.hasMarked(key)) {
+				content.mark(key);
+			}
+			else {
+				needWrite = false;
+			}
+
+			if (lang == LANG_NULL) {
+				content.setProto(key, value);
+			}
+			else {
+				if (!content.hasTitle(lang)) {
+					content.addTitle(lang);
+				}
+
+				content.setValue(key, lang, value);
+			}
+
+			value = key;
 		}
-		buf += (*pfmt % base_wp % name % attr->Value()).str();
+
+		if (needWrite) {
+			buf += (*pfmt % base_wp % name % value).str();
+		}
 	}
 	const XMLElement* cele = ele->FirstChildElement();
 	if (cele) {
@@ -113,36 +141,39 @@ void walk(string& buf, const XMLElement* ele, int level) {
 
 
 int main(int argc, char** argv) {
-	if (argc != 3) {
-		cout << "Usage : in_filename out_filename" << endl;
-		return 0;
-	}
+	//if (argc != 3) {
+	//	cout << "Usage : in_filename out_filename" << endl;
+	//	return 0;
+	//}
 
-	string in_name = argv[1];
+	path inDir = argv[1];
+	path keyOutDir = argv[2];
+	path luaOutDir = argv[3];
+	string suffix = argv[4];
 
-	filename_no_ext = get_file_name_no_ext(in_name);
-	string outLua = filename_no_ext + ".lua";
-	string outKey = filename_no_ext + ".key";
+	filename_no_ext = get_file_name_no_ext(inDir.leaf().string());
+	path outLua = luaOutDir / (filename_no_ext + ".lua");
+	path outKey = keyOutDir / (filename_no_ext + suffix);
 	
 	XMLDocument* document = new XMLDocument();
-	document->LoadFile(in_name.c_str());
+	document->LoadFile(inDir.string().c_str());
 	XMLElement* root = document->RootElement();
 
-	content.open(outKey);
+	content.open(outKey.string());
+
+	for (int i = 5; i < argc; i++) {
+		content.addTitle(argv[i]);
+	}
 	
 	string buf;
 	walk(buf, root, 0);
 
-	content.writeTo(outKey);
+	content.writeTo(outKey.string());
 
-	ofstream* fsout = new ofstream(outLua);
+	auto fsout = new std::ofstream(outLua.string());
 	fsout->write(buf.c_str(), buf.size());
 	fsout->flush();
 	fsout->close();
-
-	cout << "completed" << endl;
-
-	getchar();
 
 	return 0;
 }
