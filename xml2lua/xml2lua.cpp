@@ -14,12 +14,13 @@ using namespace boost::filesystem;
 
 boost::format strFmt("%s%s=[[%s]],\n");
 boost::format notStrFmt("%s%s=%s,\n");
-boost::format keyFmt("$%s_%s_%d");
+boost::format keyFmt("%s_%s_%d");
 const vector<string> VEC_PREFIX = { "str_" };
+const vector<string> REMAIN_PREFIX = { "r_" };
 const string LANG_NULL = "";
 
 string filename_no_ext;
-int maxId = 1;
+int maxId = 0;
 Content content;
 
 inline string get_file_name_no_ext(const string filename) {
@@ -34,6 +35,15 @@ inline string get_file_name_ext(const string filename) {
 
 inline bool isStr(const string& name) {
 	for (auto prefix : VEC_PREFIX) {
+		if (boost::starts_with(name, prefix))
+			return true;
+	}
+
+	return false;
+}
+
+inline bool isRemain(const string& name) {
+	for (auto prefix : REMAIN_PREFIX) {
 		if (boost::starts_with(name, prefix))
 			return true;
 	}
@@ -61,6 +71,14 @@ string parse(string name, const vector<string>& vecPrefix, const vector<string>&
 	return name;
 }
 
+string parse(string name, const vector<string>& vecPrefix) {
+	for (auto prefix : vecPrefix) {
+		if (boost::starts_with(name, prefix)){
+			return name.substr(prefix.size());
+		}
+	}
+}
+
 void toSuffix(vector<string>& vecSuffix){
 	for (auto &value : vecSuffix) {
 		if (!boost::starts_with(value, "_"))
@@ -69,6 +87,7 @@ void toSuffix(vector<string>& vecSuffix){
 }
 
 void walk(string& buf, const XMLElement* ele, int level) {
+	maxId++;
 	int base_wp_num = level * 4;
 	string base_wp = string(base_wp_num + 4, ' ');
 	string base_wp_back4 = string(base_wp_num, ' ');
@@ -112,7 +131,11 @@ void walk(string& buf, const XMLElement* ele, int level) {
 				content.setValue(key, lang, value);
 			}
 
-			value = key;
+			value = "$" + key;
+		}
+		else if (isRemain(name)) {
+			pfmt = &strFmt;
+			name = parse(name, REMAIN_PREFIX);
 		}
 
 		if (needWrite) {
@@ -136,7 +159,6 @@ void walk(string& buf, const XMLElement* ele, int level) {
 	}
 
 	buf += base_wp_back4 + "}";
-	maxId++;
 }
 
 
@@ -165,8 +187,9 @@ int main(int argc, char** argv) {
 		content.addTitle(argv[i]);
 	}
 	
-	string buf;
+	string buf = "local " + filename_no_ext + " = ";
 	walk(buf, root, 0);
+	buf += "\nreturn " + filename_no_ext;
 
 	content.writeTo(outKey.string());
 
